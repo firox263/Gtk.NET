@@ -1,6 +1,36 @@
 # Gtk.NET
 A minimal idiomatic C# wrapper around GTK and the GObject type system.
 
+## Example
+An up to date example of what is possible with the library. Please be aware
+that function calls are being manually implemented at the moment to focus on
+control flow between C# and GTK. Therefore, only a very limited subset of
+widgets and methods are available.
+
+```c#
+using System;
+using Gtk;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        Utils.GtkInit();
+
+        Window win = new Window(WindowType.Toplevel);
+        win.SetTitle("GTK.NET - Demo");
+        win.Present();
+
+        win.Destroy += delegate(object sender, Window.DestroySignalArgs e) {
+            Console.WriteLine("Bye!");
+            Utils.GtkMainQuit();
+        };
+
+        Utils.GtkMain();
+    }
+}
+```
+
 ## Rationale
 GtkSharp is generated using a codegen tool called GAPI. Modern GTK bindings
 should ideally be generated using the gobject-introspection infrastructure.
