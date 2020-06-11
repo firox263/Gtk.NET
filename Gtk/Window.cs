@@ -11,7 +11,7 @@ namespace Gtk
         Popup
     }
 
-    class Window : GObject
+    class Window : Widget
     {
         // Delegates
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
@@ -51,6 +51,17 @@ namespace Gtk
         public void GetTitle()
         {
             gtk_window_get_title(Handle);
+        }
+
+        // TODO: REMOVE THIS
+        // Window should not contain gtk_container_add
+        [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
+		delegate void d_gtk_container_add(IntPtr raw, IntPtr widget);
+		static d_gtk_container_add gtk_container_add = FuncLoader.LoadFunction<d_gtk_container_add>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_container_add"));
+
+        public void Add(GObject widget)
+        {
+            gtk_container_add(Handle, widget.Handle);
         }
 
         public event SignalHandler<DestroySignalArgs> Destroy
