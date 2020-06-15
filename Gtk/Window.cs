@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Collections;
+
+using GLib;
 
 namespace Gtk
 {
@@ -31,6 +31,10 @@ namespace Gtk
 		delegate void d_gtk_window_set_title(IntPtr raw, IntPtr title);
 		static d_gtk_window_set_title gtk_window_set_title = FuncLoader.LoadFunction<d_gtk_window_set_title>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_window_set_title"));
 
+        [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
+		delegate void d_gtk_window_set_interactive_debugging(bool enable);
+		static d_gtk_window_set_interactive_debugging gtk_window_set_interactive_debugging = FuncLoader.LoadFunction<d_gtk_window_set_interactive_debugging>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_window_set_interactive_debugging"));
+
         public Window() : this(WindowType.Toplevel) {}
 
         public Window(WindowType type)
@@ -51,6 +55,23 @@ namespace Gtk
         public void GetTitle()
         {
             gtk_window_get_title(Handle);
+        }
+
+        public static void SetInteractiveDebugging(bool enable)
+        {
+            gtk_window_set_interactive_debugging(enable);
+        }
+
+        public int DefaultHeight
+        {
+            get => GetProperty<int>("default-height");
+            set => SetProperty<int>("default-height", value);
+        }
+
+        public int DefaultWidth
+        {
+            get => GetProperty<int>("default-width");
+            set => SetProperty<int>("default-width", value);
         }
 
         // TODO: REMOVE THIS
@@ -76,7 +97,7 @@ namespace Gtk
 
         public class DestroySignalArgs : SignalArgs
         {
-            internal override void Populate(Value[] values) {}
+            internal override void Populate(/*Value[] values*/) {}
         }
     }
 }

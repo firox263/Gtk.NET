@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
-using System.Collections;
+using GLib;
 
 namespace Gtk
 {

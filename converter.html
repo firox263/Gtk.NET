@@ -1,0 +1,150 @@
+<html>
+    <head>
+        <title>C to C# FFI converter</title>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <style>
+            body {
+                width: 70%;
+                background-color: #fafafa;
+                max-width: 1200px;
+                margin: auto;
+                font-family: Arial, Helvetica, sans-serif;
+            }
+
+            textarea {
+                width: 100%;
+                height: 120px;
+                resize: none;
+                padding: 5px;
+            }
+        </style>
+
+        <script>
+            // Health warning: Very poor code
+            // ===
+            // Quite literally the minimum effort necessary
+            // to get a somewhat working function signature
+            // generator. Rewrite this ASAP.
+
+            function MarshalNonPtrType(type) {
+                switch (type) {
+                    case "guint":
+                        return 'uint';
+                    case "gboolean":
+                        return 'bool';
+                    case "gint":
+                        return 'int';
+                    default:
+                        console.log(`Could not marshal ${type}`);
+                        return type;
+                }
+            }
+
+            function MarshalParam(pair) {
+                console.log(pair);
+
+                ptr = false;
+                param = pair;
+                if (pair.includes("*")) {
+                    ptr = true;
+                    // Remove * from string
+                    param = pair.replace('*', '');
+                }
+
+                var type = param.split(" ")[0];
+                var name = param.split(" ")[1];
+
+                if (type == "const") {
+                    type = param.split(" ")[1];
+                    name = param.split(" ")[2];
+                }
+
+                // Doesn't work?
+                // Note to self:
+                // Rewrite in typescript
+                if (name == "object")
+                    name == "obj";
+
+                if (ptr == true) {
+                    return `IntPtr ${name}`;
+                }
+                return `${MarshalNonPtrType(type)} ${name}`;
+            }
+
+            function GuessLibrary(fname) {
+                if (fname.startsWith("g_"))
+                    return "GObject"; // Could be GLib, but we don't know?
+                else if (fname.startsWith("gdk_"))
+                    return "Gdk";
+                else if (fname.startsWith("atk_"))
+                    return "Atk";
+                else
+                    return "Gtk";
+            }
+
+            function Parse() {
+                var sig = document.getElementById("input").value;
+                var final = function () {
+                    if (sig == "")
+                    return "";
+
+                    var return_type = MarshalNonPtrType(sig.split(/\s+/g)[0]);
+                    var return_type_is_ptr = false;
+                    
+                    var fname;
+                    if (return_type.endsWith("*"))
+                        return_type = "IntPtr";
+                    if (sig.split(/\s+/g)[1] == "*") {
+                        return_type = "IntPtr";
+                        fname = sig.split(/\s+/g)[2];
+                    }
+                    else {
+                        fname = sig.split(/\s+/g)[1];
+                    }
+                    
+                    parameters = sig.substring(sig.lastIndexOf("(") + 1, sig.lastIndexOf(")"));
+                    var param_array = parameters.split(",");
+                    var output_params = "";
+
+                    console.log("Params: " + param_array);
+
+                    var first = true;
+                    for (param of param_array) {
+                        param = param.trim();
+                        if (first) {
+                            output_params = MarshalParam(param);
+                            first = false;
+                        }
+                        else {
+                            output_params += `, ${MarshalParam(param)}`;
+                        }
+                    }
+
+                    var library = GuessLibrary(fname);
+                    
+                    var part1 = "[UnmanagedFunctionPointer (CallingConvention.Cdecl)]";
+                    var part2 = `delegate ${return_type} d_${fname}(${output_params});`;
+                    var part3 = `static d_${fname} ${fname} = FuncLoader.LoadFunction<d_${fname}>(FuncLoader.GetProcAddress(GLibrary.Load(Library.${library}), "${fname}"));`
+
+                    return `${part1}\n${part2}\n${part3}`;
+                }();
+
+                document.getElementById("output").value = final;
+            }
+        </script>
+
+        <h1>GTK.NET function signature conversion</h1>
+        <p>Paste in the function signature in C to automatically output the equivalent FuncLoader call in C#. This will be made automatic for gir generation, but is useful when working on GLib itself.</p>
+        <p><b>IMPORTANT:</b> Only enter one function signature at a time. This is not particularly well-written, so manually review the function signature before using.</p>
+        <p>Input:</p>
+        <textarea id="input" oninput="Parse()">
+
+        </textarea>
+        <p>Output:</p>
+        <textarea id="output" readonly>
+            
+        </textarea>
+    </body>
+</html>

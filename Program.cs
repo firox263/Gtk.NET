@@ -1,18 +1,24 @@
 ﻿using System;
+
+using GLib;
 using Gtk;
 
 class Program
 {
     static void Main(string[] args)
     {
-        Utils.GtkInit();
+        Global.GtkInit();
+
+        //Window.SetInteractiveDebugging(true);
 
         Window win = new Window(WindowType.Toplevel);
         win.SetTitle("GTK.NET Demo");
+        win.DefaultWidth = 800;
+        win.DefaultHeight = 600;
 
         win.Destroy += delegate(object sender, Window.DestroySignalArgs e) {
             Console.WriteLine("Bye!");
-            Utils.GtkMainQuit();
+            Global.GtkMainQuit();
         };
 
         Button btn = new Button("Click!");
@@ -24,7 +30,7 @@ class Program
         win.ShowAll();
         win.Present();
 
-        Utils.GtkMain();
+        Global.GtkMain();
     }
 }
 
