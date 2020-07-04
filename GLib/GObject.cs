@@ -5,23 +5,10 @@ using System.Collections;
 
 namespace GLib
 {
-    public struct GObjectArgs
-    {
-        internal IntPtr ptr;
-        internal bool owned;
-
-        public GObjectArgs(IntPtr ptr, bool owned = false)
-        {
-            this.ptr = ptr;
-            this.owned = owned;
-        }
-    }
-
     // Stub Class (Inheritance Purposes only)
     public class GInitiallyUnowned : GObject
     {
         public GInitiallyUnowned() {}
-        public GInitiallyUnowned(GObjectArgs args) : base(args) {}
     }
 
     // GLib.GObject
@@ -33,12 +20,38 @@ namespace GLib
     // Our initial naive implementation assumes there can only
     // ever be one C# wrapper for a GObject instance at any one
     // time.
+    //
+    // The GObject can be either owned or unowned. If owned, we hold
+    // a strong reference to the unmanaged object, and can prevent it
+    // from being destroyed. Otherwise, we have a weak reference and
+    // can use it but must check that it still exists.
+    //
+    // FOR WRAPPER TYPES: Additionally, the GObject uses lazy initialisation. We
+    // defer creation of the unmanaged object when the constructor is called. If
+    // the GObject is to wrap an existing object, rather than create one, the
+    // `InitWrapper()` function can be called manually by WrapPointer(). Thus we
+    // can avoid subclasses having to define multiple constructors. This is done
+    // purely for API-cleanliness.
+    //
+    // Since we do not want to impose arbitrary restrictions on user-subclassed objects
+    // being able to use the constructor, mostly for readability purposes, we instead use a
+    // ToggleRef based system to ensure that we will never be in a position where we need
+    // to recreate a wrapper for an object with custom state. The subclass wrapper will exist
+    // for the entire lifetime of the managed subclass object.
     public class GObject : IDisposable
     {
-        // Wrapper to Unmanaged Type
-        protected IntPtr _handle = IntPtr.Zero;
+        // Pointer to Unmanaged Type
+        private IntPtr _handle = IntPtr.Zero;
+
+        // We use the 'Handle' variable for lazy init
         public IntPtr Handle {
-            get => _handle;
+            get {
+                if (!isInit)
+                    // When calling DefaultConstructor, we will
+                    // always be owned by the managed assembly.
+                    InitWrapper(defaultConstructor(), true);
+                return _handle;
+            }
         }
 
         // Static Members
@@ -47,27 +60,32 @@ namespace GLib
         // Instance Members
         List<Closure> signals = new List<Closure>();
 
+        protected delegate IntPtr DefaultConstructor();
+        protected DefaultConstructor defaultConstructor;
+
         protected bool isOwned = false;
         protected bool isInit = false;
+        protected bool isSubclass = false;
 
-        // Create a new GObject
-        // This will *always* be owned by the managed assembly
+        // Creates a new GObject wrapper
+        // Actual assignment of the wrapper's pointer is
+        // deferred until either InitWrapper() is called or the
+        // Handle is requested (in which case a new object is
+        // created).
         public GObject()
         {
             if (GetType() != typeof(GObject))
-            {
-                return;
-            }
-            
-            _handle = g_object_new_with_properties(GType.Object, 0, IntPtr.Zero, null);
-            Init(_handle, true);
+                isSubclass = true;
+
+            defaultConstructor = delegate() {
+                return g_object_new_with_properties(GType.Object, 0, IntPtr.Zero, null);
+            }; 
         }
 
-        // Wraps an existing GObject
-        // We do not assume ownership by default
-        public GObject(GObjectArgs args) => Init(args.ptr, args.owned);
-
-        protected void Init(IntPtr ptr, bool owned)
+        // Initialise the wrapper
+        // We cannot use Handle in here as it may not
+        // be initialised yet.
+        protected void InitWrapper(IntPtr ptr, bool owned)
         {
             // Sanity Check
             GObject obj;
@@ -82,12 +100,12 @@ namespace GLib
 
             this.isOwned = owned;
             if (isOwned)
-                Take();
+                Take(_handle);
 
             // TODO: Check if we are a subclass?
 
             // Add to Wrapper Dict
-            wrappers.Add(Handle, this);
+            wrappers.Add(_handle, this);
 
             // Announce Creation
             Type obj_type = this.GetType();
@@ -124,16 +142,21 @@ namespace GLib
             // TODO: Use GType
             System.Type objType = typeof(T);
 
-            // Check if the type is a wrapper type or a subclass
-            // Use threshold type for this? 
+            // IMPORTANT !!!
+            // TODO: Check if the type is a wrapper type or a subclass
+            // Use threshold type for this?
+            // If subclass, this is a fatal error
+            // The subclass wrapper should live for the
+            // lifetime of the subclassed object.
 
-            // If we are a wrapper, we can assume there will
-            // be a `new(GObjectArgs args)` constructor
-            // TODO: Find a better method for this... whatever works?
-            return (T)Activator.CreateInstance(
+            T ret = (T)Activator.CreateInstance(
                 objType,
-                new object[] { new GObjectArgs(ptr, owned) }
+                null // new object[] {}
             );
+
+            ret.InitWrapper(ptr, owned);
+
+            return ret;
         }
 
         // Lookup GType
@@ -154,16 +177,20 @@ namespace GLib
 		}*/
 
         // Steals the reference and makes it owned by the managed wrapper
-        protected void Take()
+        protected void Take() => Take(Handle);
+
+        // Allows for a custom IntPtr to be passed in,
+        // so we can use it in Handle's getter
+        protected void Take(IntPtr handle)
         {
-            if (Handle == IntPtr.Zero)
+            if (handle == IntPtr.Zero)
                 throw new Exception("This wrapper type does not refer to a native object");
 
-            bool floating = g_object_is_floating(Handle);
+            bool floating = g_object_is_floating(handle);
             if (floating)
-                g_object_ref_sink(Handle);
+                g_object_ref_sink(handle);
             else
-                g_object_ref(Handle);
+                g_object_ref(handle);
 
             isOwned = true;
         }

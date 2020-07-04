@@ -42,14 +42,13 @@ namespace Gtk
             if (GetType() != typeof(Window))
             {
                 // Subclass
-                // return;
+                //return;
             }
 
-            _handle = gtk_window_new((int)type);
-            Init(_handle, true);
+            defaultConstructor = delegate() {
+                return gtk_window_new((int)type);
+            };
         }
-
-        public Window(GObjectArgs args) : base(args) {}
 
         public void Present()
         {

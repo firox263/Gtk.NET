@@ -11,14 +11,15 @@ namespace Gtk
         {
             if (GetType() != typeof(Widget))
             {
-                // Subclass
+                // Setup Properties
+                isSubclass = true;
                 return;
             }
-            
-            throw new NotImplementedException("Add gtk_widget_new() equivalent");
-        }
 
-        public Widget(GObjectArgs args) : base(args) {}
+            defaultConstructor = delegate() {
+                throw new NotImplementedException("Add gtk_widget_new() equivalent");
+            };
+        }
 
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
         delegate void d_gtk_widget_show(IntPtr raw);

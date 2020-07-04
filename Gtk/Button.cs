@@ -12,13 +12,13 @@ namespace Gtk
             if (GetType() != typeof(Button))
             {
                 // Subclass
+                return;
             }
 
-            this._handle = gtk_button_new_with_label(Utils.StringToPtrGStrdup(label));
-            Init(_handle, true);
+            defaultConstructor = delegate() {
+                return gtk_button_new_with_label(Utils.StringToPtrGStrdup(label));
+            };
         }
-
-        public Button(GObjectArgs args) : base(args) {}
 
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
 		delegate IntPtr d_gtk_button_new_with_label(IntPtr label);

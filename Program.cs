@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Diagnostics;
 
 using GLib;
 using Gtk;
 
 public class MyWindow : Window
 {
-    public MyWindow(GObjectArgs args) : base(args) {}
-
     public MyWindow()
     {
         this.SetTitle("GTK.NET Demo 2");
@@ -22,8 +19,6 @@ public class MyWindow : Window
         Add(btn);
         ShowAll();
     }
-
-    // TODO: Use static constructor for class initialisation?
 
     void OnDestroy(object sender, DestroySignalArgs e)
     {
