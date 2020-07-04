@@ -7,10 +7,18 @@ namespace Gtk
 {
     class Button : Widget
     {
-        public Button(string label)
+        public Button(string label) : base()
         {
+            if (GetType() != typeof(Button))
+            {
+                // Subclass
+            }
+
             this._handle = gtk_button_new_with_label(Utils.StringToPtrGStrdup(label));
+            Init(_handle, true);
         }
+
+        public Button(GObjectArgs args) : base(args) {}
 
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
 		delegate IntPtr d_gtk_button_new_with_label(IntPtr label);

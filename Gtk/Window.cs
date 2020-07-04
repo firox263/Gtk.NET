@@ -5,13 +5,13 @@ using GLib;
 
 namespace Gtk
 {
-    enum WindowType
+    public enum WindowType
     {
         Toplevel,
         Popup
     }
 
-    class Window : Widget
+    public class Window : Widget
     {
         // Delegates
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
@@ -37,10 +37,19 @@ namespace Gtk
 
         public Window() : this(WindowType.Toplevel) {}
 
-        public Window(WindowType type)
+        public Window(WindowType type) : base()
         {
-            this._handle = gtk_window_new((int)type);
+            if (GetType() != typeof(Window))
+            {
+                // Subclass
+                // return;
+            }
+
+            _handle = gtk_window_new((int)type);
+            Init(_handle, true);
         }
+
+        public Window(GObjectArgs args) : base(args) {}
 
         public void Present()
         {
