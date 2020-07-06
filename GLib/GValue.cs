@@ -29,47 +29,45 @@ namespace GLib
             g_value_unset(ref this);
         }
 
-        // TODO: Terrible, messy solution
-        // Either commit to generics or don't use them at all
-        public void Set<T>(object val)
+        public void Set(object val)
         {
-            GType gtype = (GType)typeof(T);
-            if (gtype != type)
-                throw new Exception();
+			GType gtype = new GType(type);
+			if ((GType)val.GetType() != gtype)
+				throw new InvalidCastException($"Could not cast between {val.GetType().FullName} and {((Type)gtype).FullName}");
 
-            if (type == GType.Boolean)
+            if (gtype == GType.Boolean)
                 g_value_set_boolean (ref this, (bool) val);
-            else if (type == GType.UChar)
+            else if (gtype == GType.UChar)
                 g_value_set_uchar (ref this, (byte) val);
-            else if (type == GType.Char)
+            else if (gtype == GType.Char)
                 g_value_set_char (ref this, (sbyte) val);
-            else if (type == GType.Int)
+            else if (gtype == GType.Int)
                 g_value_set_int (ref this, (int) val);
-            else if (type == GType.UInt)
+            else if (gtype == GType.UInt)
                 g_value_set_uint (ref this, (uint) val);
-            else if (type == GType.Int64)
+            else if (gtype == GType.Int64)
                 g_value_set_int64 (ref this, (long) val);
-            /*else if (type == GType.Long)
+            /*else if (gtype == GType.Long)
                 SetLongForPlatform ((long) val);*/
-            else if (type == GType.UInt64)
+            else if (gtype == GType.UInt64)
                 g_value_set_uint64 (ref this, (ulong) val);
-            /*else if (type == GType.ULong)
+            /*else if (gtype == GType.ULong)
                 SetULongForPlatform (Convert.ToUInt64 (val));
-            else if (GType.Is (type, GType.Enum))
+            else if (GType.Is (gtype, GType.Enum))
                 g_value_set_enum (ref this, (int)val);
-            else if (GType.Is (type, GType.Flags))
+            else if (GType.Is (gtype, GType.Flags))
                 g_value_set_flags (ref this, (uint)(int)val);*/
-            else if (type == GType.Float)
+            else if (gtype == GType.Float)
                 g_value_set_float (ref this, (float) val);
-            else if (type == GType.Double)
+            else if (gtype == GType.Double)
                 g_value_set_double (ref this, (double) val);
-            /*else if (type == GType.Variant)
+            /*else if (gtype == GType.Variant)
                 g_value_set_variant (ref this, ((GLib.Variant) val).Handle);*/
-            else if (type == GType.String) {
+            else if (gtype == GType.String) {
                 IntPtr native = Utils.StringToPtrGStrdup ((string)val);
                 g_value_set_string (ref this, native);
                 //GLib.Marshaller.Free (native);
-            } else if (type == GType.Pointer) {
+            } else if (gtype == GType.Pointer) {
                 if (val.GetType () == typeof (IntPtr)) {
                     g_value_set_pointer (ref this, (IntPtr) val);
                     return;
@@ -80,7 +78,7 @@ namespace GLib
                 IntPtr buf = Marshal.AllocHGlobal (Marshal.SizeOf (val.GetType()));
                 Marshal.StructureToPtr (val, buf, false);
                 g_value_set_pointer (ref this, buf);*/
-            } else if (type == GType.Param) {
+            } else if (gtype == GType.Param) {
                 g_value_set_param (ref this, (IntPtr) val);
             }/* else if (type == ValueArray.GType) {
                 g_value_set_boxed (ref this, ((ValueArray) val).Handle);
@@ -111,7 +109,7 @@ namespace GLib
         // is the result they expect it to be.
         public object Get<T>()
         {
-            return default(T);
+            throw new NotImplementedException("We do not support getters yet!");
         }
 
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]

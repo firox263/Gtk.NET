@@ -31,32 +31,39 @@ using System.Runtime.InteropServices;
 namespace GLib
 {
     enum TypeFundamentals {
-        TypeInvalid	= 0 << 2,
-        TypeNone	= 1 << 2,
-        TypeInterface	= 2 << 2,
-        TypeChar	= 3 << 2,
-        TypeUChar	= 4 << 2,
-        TypeBoolean	= 5 << 2,
-        TypeInt		= 6 << 2,
-        TypeUInt	= 7 << 2,
-        TypeLong	= 8 << 2,
-        TypeULong	= 9 << 2,
-        TypeInt64	= 10 << 2,
-        TypeUInt64	= 11 << 2,
-        TypeEnum	= 12 << 2,
-        TypeFlags	= 13 << 2,
-        TypeFloat	= 14 << 2,
-        TypeDouble	= 15 << 2,
-        TypeString	= 16 << 2,
-        TypePointer	= 17 << 2,
-        TypeBoxed	= 18 << 2,
-        TypeParam	= 19 << 2,
-        TypeObject	= 20 << 2,
-        TypeVariant	= 21 << 2
+        TypeInvalid	    = 0 << 2,
+        TypeNone	    = 1 << 2,
+        TypeInterface   = 2 << 2,
+        TypeChar	    = 3 << 2,
+        TypeUChar	    = 4 << 2,
+        TypeBoolean	    = 5 << 2,
+        TypeInt		    = 6 << 2,
+        TypeUInt	    = 7 << 2,
+        TypeLong	    = 8 << 2,
+        TypeULong	    = 9 << 2,
+        TypeInt64	    = 10 << 2,
+        TypeUInt64	    = 11 << 2,
+        TypeEnum	    = 12 << 2,
+        TypeFlags	    = 13 << 2,
+        TypeFloat	    = 14 << 2,
+        TypeDouble	    = 15 << 2,
+        TypeString	    = 16 << 2,
+        TypePointer	    = 17 << 2,
+        TypeBoxed	    = 18 << 2,
+        TypeParam	    = 19 << 2,
+        TypeObject	    = 20 << 2,
+        TypeVariant	    = 21 << 2
+    }
+
+    public static class GTypeExtensions
+    {
+        // GType equivalents to typeof() and GetType()
+        public static GType gtypeof(Type type) => (GType)type;
+        public static GType GetGType(this object o) => (GType)o.GetType();
     }
 
     // Simple GType struct
-    struct GType
+    public struct GType
     {
         // List of fundamental types
         public static readonly GType Invalid = new GType ((IntPtr) TypeFundamentals.TypeInvalid);
@@ -82,69 +89,6 @@ namespace GLib
 		public static readonly GType Object = new GType ((IntPtr) TypeFundamentals.TypeObject);
 		public static readonly GType Variant = new GType ((IntPtr) TypeFundamentals.TypeVariant);
 
-        // Mapping between GType and C# type systems
-        // TODO: Investigate whether the performance impact for reverse lookup
-        // is negligible so we can save memory with only one dict.
-        static Dictionary<IntPtr, Type> TypeDict = new Dictionary<IntPtr, Type>();
-        static Dictionary<Type, GType> TypeDictReversed = new Dictionary<Type, GType>();
-
-        private IntPtr typeid;
-
-        public GType(IntPtr typeid)
-        {
-            this.typeid = typeid;
-        }
-
-        public static explicit operator IntPtr (GType gtype) => gtype.typeid;
-
-        public static explicit operator Type (GType gtype)
-        {
-            Type type;
-            if (!TypeDict.TryGetValue(gtype.typeid, out type))
-                throw new Exception();
-            return type;
-        }
-
-        public static explicit operator GType (Type type)
-        {
-            GType gtype;
-            if (!TypeDictReversed.TryGetValue(type, out gtype))
-                throw new Exception();
-            return gtype;
-        }
-
-        // Compare two GTypes
-        public static bool operator == (GType t1, GType t2) => (t1.typeid == t2.typeid);
-        public static bool operator != (GType t1, GType t2) => (t1.typeid != t2.typeid);
-
-        // Compare GType and typeid IntPtr 
-        public static bool operator == (GType t1, IntPtr typeid) => (t1.typeid == typeid);
-        public static bool operator != (GType t1, IntPtr typeid) => (t1.typeid != typeid);
-        public static bool operator == (IntPtr typeid, GType t2) => (typeid == t2.typeid);
-        public static bool operator != (IntPtr typeid, GType t2) => (typeid != t2.typeid);
-
-        public override bool Equals(object o)
-		{
-			if (!(o is GType))
-				return false;
-
-			return ((GType) o) == this;
-		}
-
-		public override int GetHashCode()
-		{
-			return typeid.GetHashCode();
-		}
-
-        static void Register(GType type, Type managed_type)
-        {
-            if (!TypeDict.ContainsKey(type.typeid))
-            {
-                TypeDict.Add(type.typeid, managed_type);
-                TypeDictReversed.Add(managed_type, type);
-            }
-        }
-
         static GType()
         {
             // Register fundamental types
@@ -159,9 +103,123 @@ namespace GLib
 			Register (GType.Double, typeof (double));
 			Register (GType.String, typeof (string));
 			Register (GType.Pointer, typeof (IntPtr));
-			Register (GType.Object, typeof (GObject));
+			Register (GType.Object, typeof (GLib.Object));
 			Register (GType.Pointer, typeof (IntPtr));
 			//Register (GType.Variant, typeof (GLib.Variant));
         }
+
+        // Mapping between GType and C# type systems
+        // TODO: Investigate whether the performance impact for reverse lookup
+        // is negligible so we can save memory with only one dict.
+        static Dictionary<IntPtr, Type> TypeDict = new Dictionary<IntPtr, Type>();
+        static Dictionary<Type, GType> TypeDictReversed = new Dictionary<Type, GType>();
+
+        private IntPtr typeid;
+
+        public GType(IntPtr typeid)
+        {
+            this.typeid = typeid;
+        }
+
+        public static void Register(GType type, Type managedType)
+        {
+            if (!TypeDict.ContainsKey(type.typeid))
+            {
+                // Recursively register GObjects
+                if (managedType.IsSubclassOf(typeof(GLib.Object)))
+                {
+                    Type baseType = managedType.BaseType;
+                    if (managedType.BaseType != null)
+                        Register(GLib.Object.ResolveGType(baseType), baseType);
+                }
+
+                // Add to typedict
+                TypeDict.Add(type.typeid, managedType);
+                TypeDictReversed.Add(managedType, type);
+
+                // Announce
+                Console.WriteLine($"Registering {managedType.FullName} in typedict");
+            }
+        }
+
+        static GType ResolveGLibType(System.Type type)
+        {
+            GType gtype;
+
+            // First check typedict
+            if (TypeDictReversed.TryGetValue(type, out gtype))
+                return gtype;
+            
+            // Check if subclass of GObject
+            if (type.IsSubclassOf(typeof(GLib.Object)))
+            {
+                gtype = GLib.Object.ResolveGType(type);
+                Register(gtype, type);
+                return gtype;
+            }
+            
+            // TODO:
+            // - GType for Subclasses
+            // - GType for Pointers/Opaque Values
+            // - etc
+            throw new NotImplementedException("Unimplemented GType!");
+        }
+
+        static System.Type ResolveManagedType(GType gtype)
+        {
+            // First check typedict
+            if (TypeDict.TryGetValue(gtype.typeid, out Type type))
+                return type;
+
+            // If not
+            throw new NotImplementedException("Type lookup not implemented");
+
+            //return type;
+        }
+
+        // Casting
+        public static explicit operator IntPtr (GType gtype) => gtype.typeid;
+        public static explicit operator Type (GType gtype) => ResolveManagedType(gtype);
+        public static explicit operator GType (Type type) => ResolveGLibType(type);
+
+        // Compare two GTypes
+        public static bool operator == (GType t1, GType t2) => (t1.typeid == t2.typeid);
+        public static bool operator != (GType t1, GType t2) => (t1.typeid != t2.typeid);
+
+        // Check type of object
+        public static bool IsType(IntPtr obj, GType gtype)
+		    => g_type_check_instance_is_a(obj, (IntPtr)gtype);
+
+        public override bool Equals(object o)
+		{
+			if (!(o is GType))
+				return false;
+
+			return ((GType) o) == this;
+		}
+
+        public override int GetHashCode ()
+		{
+			return typeid.GetHashCode ();
+		}
+
+        // Ensure class_init has been called
+        internal void EnsureClass()
+		{
+			if (g_type_class_peek(typeid) == IntPtr.Zero)
+				g_type_class_ref(typeid);
+		}
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+		delegate bool d_g_type_check_instance_is_a(IntPtr obj, IntPtr gtype);
+		static d_g_type_check_instance_is_a g_type_check_instance_is_a = FuncLoader.LoadFunction<d_g_type_check_instance_is_a>(FuncLoader.GetProcAddress(GLibrary.Load(Library.GObject), "g_type_check_instance_is_a"));
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+		delegate IntPtr d_g_type_class_peek(IntPtr gtype);
+		static d_g_type_class_peek g_type_class_peek = FuncLoader.LoadFunction<d_g_type_class_peek>(FuncLoader.GetProcAddress(GLibrary.Load(Library.GObject), "g_type_class_peek"));
+
+		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+		delegate IntPtr d_g_type_class_ref(IntPtr gtype);
+		static d_g_type_class_ref g_type_class_ref = FuncLoader.LoadFunction<d_g_type_class_ref>(FuncLoader.GetProcAddress(GLibrary.Load(Library.GObject), "g_type_class_ref"));
     }
 }

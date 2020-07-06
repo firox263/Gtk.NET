@@ -5,20 +5,21 @@ using GLib;
 
 namespace Gtk
 {
-    class Button : Widget
+    [GLib.Wrapper]
+    public class Button : Widget
     {
-        public Button(string label) : base()
+        public Button(string label)
         {
-            if (GetType() != typeof(Button))
-            {
-                // Subclass
-                return;
-            }
-
             defaultConstructor = delegate() {
                 return gtk_button_new_with_label(Utils.StringToPtrGStrdup(label));
             };
         }
+
+        [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
+        delegate IntPtr d_gtk_button_get_type();
+        static d_gtk_button_get_type gtk_button_get_type = FuncLoader.LoadFunction<d_gtk_button_get_type>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_button_get_type"));
+
+        private static IntPtr GType => gtk_button_get_type();
 
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
 		delegate IntPtr d_gtk_button_new_with_label(IntPtr label);

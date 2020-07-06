@@ -5,6 +5,8 @@ using Gtk;
 
 public class MyWindow : Window
 {
+    Box box;
+
     public MyWindow()
     {
         this.SetTitle("GTK.NET Demo 2");
@@ -13,22 +15,31 @@ public class MyWindow : Window
 
         this.Destroy += OnDestroy;
 
-        Button btn = new Button("Another Button!");
+        box = new Box(Orientation.Vertical, 0);
+
+        TextView textView = new TextView();
+        box.PackStart(textView, true, true, 0);
+
+        Button btn = new Button("Click!");
         btn.Clicked += OnButtonClick;
+        box.PackStart(btn, false, true, 0);
         
-        Add(btn);
-        ShowAll();
+        Add(box);
+
+        MyWindow win = (MyWindow)btn.GetToplevel();
+
+        win.ShowAll();
     }
 
     void OnDestroy(object sender, DestroySignalArgs e)
     {
-        Console.WriteLine("Guten Tag!");
+        Console.WriteLine("Bye!");
         Global.GtkMainQuit();
     }
 
     void OnButtonClick(object sender, SignalArgs e)
     {
-        Console.WriteLine("Hello Inheritance!");
+        Console.WriteLine("Hello!");
     }
 }
 

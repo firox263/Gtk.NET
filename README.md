@@ -9,32 +9,49 @@ widgets and methods are available.
 
 ```c#
 using System;
+
+using GLib;
 using Gtk;
+
+public class MyWindow : Window
+{
+    public MyWindow()
+    {
+        this.SetTitle("GTK.NET Demo 2");
+        this.DefaultWidth = 800;
+        this.DefaultHeight = 600;
+
+        this.Destroy += OnDestroy;
+
+        Button btn = new Button("Another Button!");
+        btn.Clicked += OnButtonClick;
+        
+        Add(btn);
+        ShowAll();
+    }
+
+    void OnDestroy(object sender, DestroySignalArgs e)
+    {
+        Console.WriteLine("Guten Tag!");
+        Global.GtkMainQuit();
+    }
+
+    void OnButtonClick(object sender, SignalArgs e)
+    {
+        Console.WriteLine("Hello Inheritance!");
+    }
+}
 
 class Program
 {
     static void Main(string[] args)
     {
-        Utils.GtkInit();
+        Global.GtkInit();
 
-        Window win = new Window(WindowType.Toplevel);
-        win.SetTitle("GTK.NET Demo");
-
-        win.Destroy += delegate(object sender, Window.DestroySignalArgs e) {
-            Console.WriteLine("Bye!");
-            Utils.GtkMainQuit();
-        };
-
-        Button btn = new Button("Click!");
-        btn.Clicked += delegate(object btn, SignalArgs e) {
-            Console.WriteLine("Hello World!");
-        };
-
-        win.Add(btn);
-        win.ShowAll();
+        MyWindow win = new MyWindow();
         win.Present();
-
-        Utils.GtkMain();
+        
+        Global.GtkMain();
     }
 }
 ```

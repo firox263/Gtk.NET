@@ -5,21 +5,21 @@ using GLib;
 
 namespace Gtk
 {
-    public class Widget : GInitiallyUnowned
+    [GLib.Wrapper]
+    public class Widget : GLib.InitiallyUnowned
     {
         public Widget()
         {
-            if (GetType() != typeof(Widget))
-            {
-                // Setup Properties
-                isSubclass = true;
-                return;
-            }
-
             defaultConstructor = delegate() {
                 throw new NotImplementedException("Add gtk_widget_new() equivalent");
             };
         }
+
+        [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
+		delegate IntPtr d_gtk_widget_get_type();
+		static d_gtk_widget_get_type gtk_widget_get_type = FuncLoader.LoadFunction<d_gtk_widget_get_type>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_widget_get_type"));
+
+        private static IntPtr GType => gtk_widget_get_type();
 
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
         delegate void d_gtk_widget_show(IntPtr raw);
@@ -42,8 +42,7 @@ namespace Gtk
         static d_gtk_widget_get_toplevel gtk_widget_get_toplevel = FuncLoader.LoadFunction<d_gtk_widget_get_toplevel>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_widget_get_toplevel"));
 
         public Widget GetToplevel() {
-            // TODO: Fix this so we can ask for a Widget bypassing Window altogether
-            return (Widget)GObject.WrapPointer<Window>(gtk_widget_get_toplevel(Handle), false);
+            return GLib.Object.WrapPointerAs<Widget>(gtk_widget_get_toplevel(Handle), false);
         }
     }
 }

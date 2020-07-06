@@ -5,17 +5,21 @@ using System.Collections;
 
 namespace Gtk
 {
+	public enum Orientation
+	{
+		Horizontal,
+		Vertical
+	};
+
     class Global
     {
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 		delegate void d_gtk_init(ref int argc, ref IntPtr argv);
 		static d_gtk_init gtk_init = FuncLoader.LoadFunction<d_gtk_init>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_init"));
 
-
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 		delegate void d_gtk_main();
 		static d_gtk_main gtk_main = FuncLoader.LoadFunction<d_gtk_main>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_main"));
-
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 		delegate void d_gtk_main_quit();

@@ -1,0 +1,13 @@
+NEXT STEPS:
+[X] Proper C# Subclassing
+[X] Flesh out GType
+[ ] Work on TODOs
+[ ] Value and SignalArgs
+
+THEN:
+[ ] More GLib coverage
+[ ] GLib Subclassing (+Interfaces for custom types)
+[ ] Static Constructors for Class Init? (EDIT: No, let the base class handle it)
+
+FINALLY:
+ - Gir.NET - GObject Introspection generated code

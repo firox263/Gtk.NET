@@ -11,13 +11,13 @@ namespace Gtk
         Popup
     }
 
+    [GLib.Wrapper]
     public class Window : Widget
     {
         // Delegates
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
         delegate IntPtr d_gtk_window_new(int type);
         static d_gtk_window_new gtk_window_new = FuncLoader.LoadFunction<d_gtk_window_new>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_window_new"));
-
 
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
         delegate void d_gtk_window_present(IntPtr raw);
@@ -37,18 +37,18 @@ namespace Gtk
 
         public Window() : this(WindowType.Toplevel) {}
 
-        public Window(WindowType type) : base()
+        public Window(WindowType type)
         {
-            if (GetType() != typeof(Window))
-            {
-                // Subclass
-                //return;
-            }
-
             defaultConstructor = delegate() {
                 return gtk_window_new((int)type);
             };
         }
+
+        [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
+		delegate IntPtr d_gtk_window_get_type();
+		static d_gtk_window_get_type gtk_window_get_type = FuncLoader.LoadFunction<d_gtk_window_get_type>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_window_get_type"));
+
+        private static IntPtr GType => gtk_window_get_type();
 
         public void Present()
         {
@@ -88,7 +88,7 @@ namespace Gtk
 		delegate void d_gtk_container_add(IntPtr raw, IntPtr widget);
 		static d_gtk_container_add gtk_container_add = FuncLoader.LoadFunction<d_gtk_container_add>(FuncLoader.GetProcAddress(GLibrary.Load(Library.Gtk), "gtk_container_add"));
 
-        public void Add(GObject widget)
+        public void Add(Widget widget)
         {
             gtk_container_add(Handle, widget.Handle);
         }

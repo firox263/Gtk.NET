@@ -15,9 +15,9 @@ namespace GLib
         SignalHandler<TArgs> callback;
         ClosureMarshal marshaller;
         string signal_name;
-        GObject obj;
+        GLib.Object obj;
 
-        public Closure(SignalHandler<TArgs> callback, GObject obj, string signal_name)
+        public Closure(SignalHandler<TArgs> callback, GLib.Object obj, string signal_name)
         {
             this.obj = obj;
             this.callback = callback;
@@ -51,7 +51,7 @@ namespace GLib
 
     // We have the non-generic Closure class to contain FFI-related
     // functions. This way we can avoid generics becoming problematic
-    // while still getting nice C# syntactic sugar with generic SignalArgs
+    // while still getting nice idiomatic C# SignalArgs.
     class Closure
     {
         // Purely for sizeof(GClosure)
