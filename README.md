@@ -1,6 +1,11 @@
 # Gtk.NET
 A minimal idiomatic C# wrapper around GTK and the GObject type system.
 
+**EDIT 19/08/2020:** This wrapper was largely successful at what it was
+trying to do, and many of the lessons learnt are helping shape the
+API for [gir.core](https://github.com/gircore/gir.core). Please consider
+contributing there instead.
+
 ## Example
 An up to date example of what is possible with the library. Please be aware
 that function calls are being manually implemented at the moment to focus on
